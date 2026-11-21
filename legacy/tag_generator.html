@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Generador de Etiquetas por Grupos</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f1f5f9;
+    padding: 25px;
+    color: #1e293b;
+    margin: 0;
+  }
+
+  .toolbar {
+    background: #ffffff;
+    padding: 16px 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    max-width: 1100px;
+    margin: 0 auto 25px auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .palette-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .palette {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    border-width: 2px;
+    border-style: solid;
+    transition: transform 0.15s;
+  }
+  .swatch:hover { transform: scale(1.12); }
+  .swatch.active {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #0f172a;
+    transform: scale(1.12);
+  }
+
+  .add-color-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px dashed #94a3b8;
+    background: #f8fafc;
+    color: #475569;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .add-color-btn input[type="color"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  button.btn {
+    border: none;
+    padding: 9px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s;
+  }
+  .btn-primary { background: #2563eb; color: white; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-file { background: #e2e8f0; color: #0f172a; }
+  .btn-file:hover { background: #cbd5e1; }
+  .btn-file.linked { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+  .btn-capture { background: #0f172a; color: white; }
+  .btn-capture:hover { background: #334155; }
+
+  .toolbar-row {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: flex-end;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 13px;
+  }
+  .toolbar-row-label { font-weight: 600; color: #475569; margin-right: auto; }
+  .toolbar-row .label-editor { margin-bottom: 0; justify-content: flex-end; }
+  .toolbar-row > select {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 13px;
+    background: #f8fafc;
+  }
+  .status-bar {
+    max-width: 1100px;
+    margin: -15px auto 20px auto;
+    font-size: 12px;
+    color: #64748b;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 5px;
+  }
+
+  .canvas-area {
+    background: #ffffff;
+    padding: 35px;
+    border-radius: 12px;
+    max-width: 1100px;
+    margin: 0 auto;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px 50px;
+    align-items: start;
+  }
+
+  @media (max-width: 768px) {
+    .canvas-area { grid-template-columns: 1fr; }
+  }
+
+  .group-card {
+    position: relative;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px dashed #cbd5e1;
+    transition: border-color 0.2s;
+  }
+  .group-card:hover { border-color: #94a3b8; }
+
+  .group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+
+  .group-input {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 13px;
+    outline: none;
+    width: 100%;
+    background: #f8fafc;
+  }
+  .group-input:focus { border-color: #3b82f6; background: #fff; }
+
+  .group-color-btn {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border-width: 2px;
+    border-style: solid;
+    cursor: pointer;
+    padding: 0;
+  }
+  .group-color-btn:hover { transform: scale(1.1); }
+  /* Sin color propio: se ve el color activo, pero con borde discontinuo */
+  .group-color-btn.inherited { border-style: dashed; border-color: #64748b !important; }
+
+  .group-palette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    padding: 8px;
+    margin-bottom: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+  }
+  .group-palette .swatch { width: 24px; height: 24px; padding: 0; }
+  .group-palette-reset {
+    margin-left: auto;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #334155;
+    cursor: pointer;
+  }
+  .group-palette-reset.active { background: #0f172a; border-color: #0f172a; color: #fff; }
+
+  .btn-del-group {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: none;
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .btn-del-group:hover { background: #fecaca; }
+
+  .label-editor {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .label-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .label-row .label-text {
+    flex: 1;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 13px;
+    height: 28px;
+    background: #f8fafc;
+    outline: none;
+  }
+  .label-row .label-text:focus { border-color: #3b82f6; background: #fff; }
+  .custom-check {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: #334155;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .label-editor input[type="number"],
+  .label-editor select {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 4px 6px;
+    font-size: 12px;
+    height: 28px;
+    background: #f8fafc;
+    outline: none;
+  }
+  .label-editor input:focus,
+  .label-editor select:focus { border-color: #3b82f6; background: #fff; }
+  .label-editor .label-size { width: 56px; }
+  .label-editor .label-color {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: none;
+    cursor: pointer;
+  }
+  .fmt-btn {
+    min-width: 28px;
+    height: 28px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #f8fafc;
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .fmt-btn:hover { background: #e2e8f0; }
+  .fmt-btn.on { background: #0f172a; border-color: #0f172a; color: #fff; }
+  .fmt-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .group-label {
+    margin-bottom: 10px;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+  .group-label[hidden] { display: none; }
+
+  .tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .tag {
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    border-width: 1.5px;
+    border-style: solid;
+    color: #1A202C;
+    line-height: 1.2;
+  }
+  .tag:hover { opacity: 0.75; text-decoration: line-through; }
+
+  body.capture-mode { background: #ffffff; padding: 20px; }
+  body.capture-mode .toolbar,
+  body.capture-mode .status-bar,
+  body.capture-mode .group-header,
+  body.capture-mode .label-row,
+  body.capture-mode .group-palette,
+  body.capture-mode .label-editor { display: none !important; }
+  body.capture-mode .canvas-area {
+    box-shadow: none;
+    padding: 10px;
+    max-width: 100%;
+  }
+  body.capture-mode .group-card {
+    border: none;
+    padding: 0;
+  }
+
+  .exit-capture {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 999;
+  }
+  body.capture-mode .exit-capture { display: block; }
+</style>
+</head>
+<body>
+
+  <div class="toolbar">
+    <div class="palette-section">
+      <span style="font-size: 13px; font-weight: 600; color: #475569;">Color activo:</span>
+      <div class="palette" id="palette"></div>
+      <div class="add-color-btn" title="Añadir nuevo color a la paleta">
+        +
+        <input type="color" onchange="addNewColor(this.value)">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="addGroup()">+ Nuevo Grupo</button>
+      <button class="btn btn-file" id="btnSaveFile" onclick="linkSaveFile()">💾 Vincular archivo local</button>
+      <button class="btn btn-file" onclick="loadFromFile()">📂 Cargar archivo</button>
+      <button class="btn btn-capture" onclick="toggleCapture()">📸 Modo Captura</button>
+    </div>
+
+    <div class="toolbar-row">
+      <span class="toolbar-row-label">Estilo global de labels:</span>
+      <div id="globalStyleEditor"></div>
+    </div>
+
+    <div class="toolbar-row">
+      <span class="toolbar-row-label">Exportar a Canva:</span>
+      <select id="fontSelect" title="Fuente de las etiquetas" onchange="updateExportOption('font', this.value)"></select>
+      <button class="btn btn-primary" onclick="exportSVG()">⬇️ Exportar SVG</button>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span>💡 Selecciona un color arriba, escribe en cualquier grupo y pulsa <b>Enter</b>. Haz clic en una etiqueta para borrarla.</span>
+    <span id="fileStatus">Estado: Sin archivo vinculado (cambios en memoria)</span>
+  </div>
+
+  <div class="canvas-area" id="canvasArea"></div>
+
+  <button class="exit-capture" onclick="toggleCapture()">Salir del Modo Captura</button>
+
+<!-- Convierte el texto en trazos al exportar con fuente externa -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/opentype.js/1.3.4/opentype.min.js"></script>
+
+<script>
+  const defaultPalette = [
+    { bg: '#B6D7F8', border: '#76B2EC' },
+    { bg: '#B5F5D1', border: '#6EE7A8' },
+    { bg: '#FBE0B8', border: '#E5B776' },
+    { bg: '#FBF8B8', border: '#E3DC6D' },
+    { bg: '#E2D4FC', border: '#B99CF5' },
+    { bg: '#FCCFE2', border: '#F094BA' },
+    { bg: '#BCEEF7', border: '#75D2E3' },
+    { bg: '#E2E8F0', border: '#94A3B8' }
+  ];
+
+  let state = {
+    palette: [...defaultPalette],
+    groups: [
+      {
+        id: 1,
+        tags: [
+          { text: 'Windows', bg: '#B6D7F8', border: '#76B2EC' },
+          { text: 'UNIX / Linux', bg: '#B6D7F8', border: '#76B2EC' },
+          { text: 'Nginx', bg: '#B6D7F8', border: '#76B2EC' },
+          { text: 'Apache', bg: '#B6D7F8', border: '#76B2EC' },
+          { text: 'AWS', bg: '#B6D7F8', border: '#76B2EC' },
+          { text: 'Docker', bg: '#B6D7F8', border: '#76B2EC' },
+          { text: 'Git CMD', bg: '#B6D7F8', border: '#76B2EC' },
+          { text: 'GitHub / GitLab', bg: '#B6D7F8', border: '#76B2EC' },
+          { text: 'Scripting (Bash/Shell)', bg: '#B6D7F8', border: '#76B2EC' },
+          { text: 'Jenkins', bg: '#B6D7F8', border: '#76B2EC' }
+        ]
+      },
+      {
+        id: 2,
+        tags: [
+          { text: 'Node.js', bg: '#B5F5D1', border: '#6EE7A8' },
+          { text: 'Express', bg: '#B5F5D1', border: '#6EE7A8' },
+          { text: 'PHP', bg: '#B5F5D1', border: '#6EE7A8' },
+          { text: 'Strapi (CMS Headless)', bg: '#B5F5D1', border: '#6EE7A8' },
+          { text: 'MySQL', bg: '#B5F5D1', border: '#6EE7A8' },
+          { text: 'PostgreSQL', bg: '#B5F5D1', border: '#6EE7A8' }
+        ]
+      },
+      {
+        id: 3,
+        tags: [
+          { text: 'JavaScript (ES6+)', bg: '#FBE0B8', border: '#E5B776' },
+          { text: 'TypeScript', bg: '#FBE0B8', border: '#E5B776' },
+          { text: 'React', bg: '#FBE0B8', border: '#E5B776' },
+          { text: 'React Native', bg: '#FBE0B8', border: '#E5B776' },
+          { text: 'Remix', bg: '#FBE0B8', border: '#E5B776' },
+          { text: 'Vite JS', bg: '#FBE0B8', border: '#E5B776' },
+          { text: 'React Router', bg: '#FBE0B8', border: '#E5B776' },
+          { text: 'Three.js', bg: '#FBE0B8', border: '#E5B776' },
+          { text: 'WebSockets', bg: '#FBE0B8', border: '#E5B776' },
+          { text: 'HTML5', bg: '#FBE0B8', border: '#E5B776' },
+          { text: 'CSS3', bg: '#FBE0B8', border: '#E5B776' },
+          { text: 'jQuery', bg: '#FBE0B8', border: '#E5B776' }
+        ]
+      },
+      {
+        id: 4,
+        tags: [
+          { text: 'Claude Code', bg: '#FBF8B8', border: '#E3DC6D' },
+          { text: 'ChatGPT', bg: '#FBF8B8', border: '#E3DC6D' },
+          { text: 'Kiro', bg: '#FBF8B8', border: '#E3DC6D' },
+          { text: 'MCP', bg: '#FBF8B8', border: '#E3DC6D' },
+          { text: 'Skills', bg: '#FBF8B8', border: '#E3DC6D' },
+          { text: 'SDD', bg: '#FBF8B8', border: '#E3DC6D' }
+        ]
+      }
+    ]
+  };
+
+  let activeColor = state.palette[0];
+  let fileHandle = null;
+
+  function computeBorder(hex) {
+    let num = parseInt(hex.replace('#', ''), 16);
+    let r = Math.max(0, (num >> 16) - 42);
+    let g = Math.max(0, ((num >> 8) & 0x00FF) - 42);
+    let b = Math.max(0, (num & 0x0000FF) - 42);
+    return '#' + (b | (g << 8) | (r << 16)).toString(16).padStart(6, '0');
+  }
+
+  function renderPalette() {
+    const el = document.getElementById('palette');
+    el.innerHTML = '';
+    state.palette.forEach(item => {
+      const swatch = document.createElement('div');
+      swatch.className = 'swatch' + (item.bg === activeColor.bg ? ' active' : '');
+      swatch.style.backgroundColor = item.bg;
+      swatch.style.borderColor = item.border;
+      swatch.onclick = () => {
+        activeColor = item;
+        renderPalette();
+        renderGroups();  // los grupos sin color propio muestran el color activo
+      };
+      el.appendChild(swatch);
+    });
+  }
+
+  function addNewColor(hex) {
+    const newColor = { bg: hex, border: computeBorder(hex) };
+    if (!state.palette.some(c => c.bg.toLowerCase() === hex.toLowerCase())) {
+      state.palette.push(newColor);
+    }
+    activeColor = newColor;
+    renderPalette();
+    renderGroups();
+    autoSaveToFile();
+  }
+
+  // ─── Fuentes ────────────────────────────────────────────────────────────
+  // Fuentes libres (OFL) de Fontsource, servidas por jsDelivr. Los pesos y la
+  // cursiva disponibles son los que publica la API de Fontsource para cada familia.
+  const ALL_WEIGHTS = [100, 200, 300, 400, 500, 600, 700, 800, 900];
+  const FONTS = {
+    'inter':            { name: 'Inter',            weights: ALL_WEIGHTS, italic: true },
+    'roboto':           { name: 'Roboto',           weights: ALL_WEIGHTS, italic: true },
+    'montserrat':       { name: 'Montserrat',       weights: ALL_WEIGHTS, italic: true },
+    'poppins':          { name: 'Poppins',          weights: ALL_WEIGHTS, italic: true },
+    'open-sans':        { name: 'Open Sans',        weights: [300, 400, 500, 600, 700, 800], italic: true },
+    'lato':             { name: 'Lato',             weights: [100, 300, 400, 700, 900], italic: true },
+    'nunito':           { name: 'Nunito',           weights: [200, 300, 400, 500, 600, 700, 800, 900], italic: true },
+    'raleway':          { name: 'Raleway',          weights: ALL_WEIGHTS, italic: true },
+    'dm-sans':          { name: 'DM Sans',          weights: ALL_WEIGHTS, italic: true },
+    'space-grotesk':    { name: 'Space Grotesk',    weights: [300, 400, 500, 600, 700], italic: false },
+    'oswald':           { name: 'Oswald',           weights: [200, 300, 400, 500, 600, 700], italic: false },
+    'bebas-neue':       { name: 'Bebas Neue',       weights: [400], italic: false },
+    'playfair-display': { name: 'Playfair Display', weights: [400, 500, 600, 700, 800, 900], italic: true },
+    'merriweather':     { name: 'Merriweather',     weights: [300, 400, 500, 600, 700, 800, 900], italic: true },
+    'source-serif-4':   { name: 'Source Serif 4',   weights: [200, 300, 400, 500, 600, 700, 800, 900], italic: true },
+    'caveat':           { name: 'Caveat',           weights: [400, 500, 600, 700], italic: false }
+  };
+
+  const WEIGHT_NAMES = {
+    100: 'Fina', 200: 'Extraligera', 300: 'Ligera', 400: 'Normal', 500: 'Media',
+    600: 'Seminegrita', 700: 'Negrita', 800: 'Extranegrita', 900: 'Negra'
+  };
+
+  const TAG_WEIGHT = 600;  // el font-weight de .tag
+
+  function nearestWeight(id, target) {
+    return FONTS[id].weights.reduce((best, w) => Math.abs(w - target) < Math.abs(best - target) ? w : best);
+  }
+
+  function fontFileUrl(id, weight, style) {
+    return `https://cdn.jsdelivr.net/fontsource/fonts/${id}@latest/latin-${weight}-${style}.woff`;
+  }
+
+  // Fuentes de opentype.js para convertir el texto en trazos al exportar
+  const fontCache = {};
+
+  function loadFont(id, weight, style = 'normal') {
+    const key = `${id}-${weight}-${style}`;
+    if (!fontCache[key]) {
+      fontCache[key] = (async () => {
+        if (!window.opentype) throw new Error('No se ha podido cargar opentype.js');
+        const res = await fetch(fontFileUrl(id, weight, style));
+        if (!res.ok) throw new Error(`HTTP ${res.status} al descargar ${FONTS[id].name}`);
+        return opentype.parse(await res.arrayBuffer());
+      })();
+      // Si falla, se olvida para poder reintentar en la siguiente exportación
+      fontCache[key].catch(() => { delete fontCache[key]; });
+    }
+    return fontCache[key];
+  }
+
+  // Las mismas fuentes, cargadas en la página para la vista previa de las labels
+  const previewFonts = new Set();
+
+  function loadPreviewFont(id, weight, style) {
+    const key = `${id}-${weight}-${style}`;
+    if (previewFonts.has(key) || !window.FontFace) return;
+    previewFonts.add(key);
+    const face = new FontFace(FONTS[id].name, `url(${fontFileUrl(id, weight, style)}) format('woff')`, { weight: String(weight), style });
+    face.load()
+      .then(f => document.fonts.add(f))
+      .catch(() => previewFonts.delete(key));
+  }
+
+  // ─── Labels de grupo ────────────────────────────────────────────────────
+  // Cada grupo guarda { text, custom, style }. Sin "custom", la label usa el
+  // estilo global (state.labelStyle); con él, su propio style. El style propio
+  // se conserva al desmarcar "Personalizar", por si se vuelve a marcar.
+  const DEFAULT_STYLE = {
+    font: 'inter',
+    weight: 700,
+    italic: false,
+    uppercase: false,
+    underline: false,
+    size: 18,
+    color: '#0F172A',
+    align: 'left'
+  };
+  const STYLE_KEYS = Object.keys(DEFAULT_STYLE);
+
+  function normalizeStyle(style) {
+    const s = {};
+    STYLE_KEYS.forEach(k => { s[k] = style && style[k] !== undefined ? style[k] : DEFAULT_STYLE[k]; });
+    if (!FONTS[s.font]) s.font = DEFAULT_STYLE.font;
+    s.weight = nearestWeight(s.font, Number(s.weight) || DEFAULT_STYLE.weight);
+    if (!FONTS[s.font].italic) s.italic = false;
+    s.size = Math.min(96, Math.max(8, Number(s.size) || DEFAULT_STYLE.size));
+    if (!['left', 'center', 'right'].includes(s.align)) s.align = 'left';
+    return s;
+  }
+
+  function normalizeGroupLabel(label) {
+    if (!label) return { text: '', custom: false, style: null };
+    if ('custom' in label) {
+      return { text: label.text || '', custom: !!label.custom, style: label.style ? normalizeStyle(label.style) : null };
+    }
+    // Formato anterior: el estilo iba suelto en la label. Si difiere del de
+    // por defecto, se había personalizado: se conserva como estilo propio.
+    const style = normalizeStyle(label);
+    const custom = STYLE_KEYS.some(k => style[k] !== DEFAULT_STYLE[k]);
+    return { text: label.text || '', custom, style: custom ? style : null };
+  }
+
+  // Estilo con el que se pinta la label: el propio o el global, más el texto
+  function effectiveLabel(group) {
+    const style = group.label.custom && group.label.style ? group.label.style : state.labelStyle;
+    return { ...style, text: group.label.text };
+  }
+
+  function hasLabel(group) {
+    return group.label.text.trim() !== '';
+  }
+
+  function labelText(label) {
+    const text = label.text.trim();
+    return label.uppercase ? text.toLocaleUpperCase('es') : text;
+  }
+
+  function applyLabelPreview(el, label) {
+    el.textContent = label.text;
+    el.hidden = label.text.trim() === '';
+    Object.assign(el.style, {
+      fontFamily: `"${FONTS[label.font].name}", sans-serif`,
+      fontWeight: label.weight,
+      fontStyle: label.italic ? 'italic' : 'normal',
+      textTransform: label.uppercase ? 'uppercase' : 'none',
+      textDecoration: label.underline ? 'underline' : 'none',
+      fontSize: label.size + 'px',
+      color: label.color,
+      textAlign: label.align
+    });
+    loadPreviewFont(label.font, label.weight, label.italic ? 'italic' : 'normal');
+  }
+
+  // Para lo que cambia a cada pulsación (texto, tamaño, color): no escribir el archivo en cada tecla
+  let saveTimer = null;
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(autoSaveToFile, 400);
+  }
+
+  function makeSelect(options, value, onchange) {
+    const select = document.createElement('select');
+    options.forEach(([val, text]) => {
+      const opt = document.createElement('option');
+      opt.value = val;
+      opt.textContent = text;
+      select.appendChild(opt);
+    });
+    select.value = String(value);
+    select.onchange = (e) => onchange(e.target.value);
+    return select;
+  }
+
+  // Editor de un estilo (global o de un grupo). update(kind) avisa del cambio:
+  //  'rebuild' → cambió la familia: hay que rehacer el editor (pesos, cursiva)
+  //  'apply'   → cambio puntual (selects, botones)
+  //  'live'    → cambia a cada pulsación (tamaño, color): guardar con retardo
+  function buildStyleEditor(style, update) {
+    const font = FONTS[style.font];
+    const editor = document.createElement('div');
+    editor.className = 'label-editor';
+
+    const family = makeSelect(
+      Object.entries(FONTS).map(([id, f]) => [id, f.name]),
+      style.font,
+      (id) => {
+        style.font = id;
+        // Cada familia tiene sus propios pesos y no todas tienen cursiva
+        style.weight = nearestWeight(id, style.weight);
+        if (!FONTS[id].italic) style.italic = false;
+        update('rebuild');
+      }
+    );
+    family.title = 'Fuente';
+
+    const weight = makeSelect(
+      font.weights.map(w => [w, `${w} · ${WEIGHT_NAMES[w]}`]),
+      style.weight,
+      (w) => { style.weight = Number(w); update('apply'); }
+    );
+    weight.title = 'Grosor';
+
+    const toggle = (content, title, key, css, disabled = false) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'fmt-btn' + (style[key] ? ' on' : '');
+      btn.innerHTML = content;
+      btn.title = disabled ? `${font.name} no tiene cursiva` : title;
+      btn.disabled = disabled;
+      Object.assign(btn.style, css);
+      btn.onclick = () => {
+        style[key] = !style[key];
+        btn.classList.toggle('on', style[key]);
+        update('apply');
+      };
+      return btn;
+    };
+
+    const size = document.createElement('input');
+    size.type = 'number';
+    size.className = 'label-size';
+    size.min = 8;
+    size.max = 96;
+    size.value = style.size;
+    size.title = 'Tamaño (px)';
+    size.oninput = (e) => {
+      const v = Number(e.target.value);
+      if (v >= 8 && v <= 96) {
+        style.size = v;
+        update('live');
+      }
+    };
+
+    const color = document.createElement('input');
+    color.type = 'color';
+    color.className = 'label-color';
+    color.value = style.color;
+    color.title = 'Color';
+    color.oninput = (e) => {
+      style.color = e.target.value;
+      update('live');
+    };
+
+    const align = makeSelect(
+      [['left', '⇤ Izquierda'], ['center', '↔ Centro'], ['right', '⇥ Derecha']],
+      style.align,
+      (a) => { style.align = a; update('apply'); }
+    );
+    align.title = 'Alineación';
+
+    editor.append(
+      family,
+      weight,
+      toggle('<i>I</i>', 'Cursiva', 'italic', { fontFamily: 'Georgia, serif' }, !font.italic),
+      toggle('<u>U</u>', 'Subrayado', 'underline', {}),
+      toggle('AA', 'Mayúsculas', 'uppercase', { fontSize: '11px' }),
+      size,
+      color,
+      align
+    );
+    return editor;
+  }
+
+  // Editor del estilo global, en la barra de herramientas
+  function renderGlobalStyleEditor() {
+    const container = document.getElementById('globalStyleEditor');
+    container.innerHTML = '';
+    container.appendChild(buildStyleEditor(state.labelStyle, (kind) => {
+      if (kind === 'rebuild') renderGlobalStyleEditor();
+      renderGroups();  // repinta las labels que usan el estilo global
+      kind === 'live' ? scheduleSave() : autoSaveToFile();
+    }));
+  }
+
+  function buildGroupLabel(group, card) {
+    const label = group.label;
+
+    const preview = document.createElement('div');
+    preview.className = 'group-label';
+    applyLabelPreview(preview, effectiveLabel(group));
+
+    const row = document.createElement('div');
+    row.className = 'label-row';
+
+    const text = document.createElement('input');
+    text.type = 'text';
+    text.className = 'label-text';
+    text.placeholder = 'Label del grupo (opcional)';
+    text.value = label.text;
+    text.oninput = (e) => {
+      label.text = e.target.value;
+      applyLabelPreview(preview, effectiveLabel(group));
+      scheduleSave();
+    };
+
+    const customCheck = document.createElement('label');
+    customCheck.className = 'custom-check';
+    customCheck.title = 'Usar un estilo propio en lugar del global';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = label.custom;
+    checkbox.onchange = (e) => {
+      label.custom = e.target.checked;
+      // La primera vez se parte del estilo global
+      if (label.custom && !label.style) label.style = { ...state.labelStyle };
+      renderGroups();
+      autoSaveToFile();
+    };
+    customCheck.append(checkbox, 'Personalizar');
+
+    row.append(text, customCheck);
+    card.appendChild(row);
+
+    if (label.custom) {
+      card.appendChild(buildStyleEditor(label.style, (kind) => {
+        if (kind === 'rebuild') {
+          renderGroups();
+          autoSaveToFile();
+          return;
+        }
+        applyLabelPreview(preview, effectiveLabel(group));
+        kind === 'live' ? scheduleSave() : autoSaveToFile();
+      }));
+    }
+
+    card.appendChild(preview);
+  }
+
+  // ─── Grupos ─────────────────────────────────────────────────────────────
+  // Grupo con la paleta de color desplegada (solo uno a la vez)
+  let openPaletteGroupId = null;
+
+  // Color de las etiquetas nuevas: el del grupo o, si no tiene, el activo de la barra
+  function groupColor(group) {
+    return group.color || activeColor;
+  }
+
+  function focusGroupInput(gIndex) {
+    setTimeout(() => {
+      const inputs = document.querySelectorAll('.group-input');
+      if (inputs[gIndex]) inputs[gIndex].focus();
+    }, 10);
+  }
+
+  function buildGroupColorButton(group) {
+    const color = groupColor(group);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'group-color-btn' + (group.color ? '' : ' inherited');
+    btn.style.backgroundColor = color.bg;
+    btn.style.borderColor = color.border;
+    btn.title = group.color
+      ? 'Color de las etiquetas de este grupo (clic para cambiarlo)'
+      : 'Usa el color activo de la barra (clic para fijar uno para este grupo)';
+    btn.onclick = () => {
+      openPaletteGroupId = openPaletteGroupId === group.id ? null : group.id;
+      renderGroups();
+    };
+    return btn;
+  }
+
+  function buildGroupPalette(group, gIndex) {
+    const row = document.createElement('div');
+    row.className = 'group-palette';
+
+    const choose = (color) => {
+      group.color = color;
+      openPaletteGroupId = null;
+      renderGroups();
+      autoSaveToFile();
+      focusGroupInput(gIndex);
+    };
+
+    state.palette.forEach(item => {
+      const swatch = document.createElement('button');
+      swatch.type = 'button';
+      const selected = group.color && group.color.bg.toLowerCase() === item.bg.toLowerCase();
+      swatch.className = 'swatch' + (selected ? ' active' : '');
+      swatch.style.backgroundColor = item.bg;
+      swatch.style.borderColor = item.border;
+      swatch.onclick = () => choose({ bg: item.bg, border: item.border });
+      row.appendChild(swatch);
+    });
+
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'group-palette-reset' + (group.color ? '' : ' active');
+    reset.textContent = '↺ Color activo';
+    reset.title = 'Usar el color activo de la barra';
+    reset.onclick = () => choose(null);
+    row.appendChild(reset);
+
+    return row;
+  }
+
+  function renderGroups() {
+    const canvas = document.getElementById('canvasArea');
+    canvas.innerHTML = '';
+    state.groups.forEach((group, gIndex) => {
+      const card = document.createElement('div');
+      card.className = 'group-card';
+
+      const header = document.createElement('div');
+      header.className = 'group-header';
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'group-input';
+      input.placeholder = `+ Añadir etiqueta al grupo ${gIndex + 1} (Enter)...`;
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter' && e.target.value.trim() !== '') {
+          const color = groupColor(group);
+          group.tags.push({
+            text: e.target.value.trim(),
+            bg: color.bg,
+            border: color.border
+          });
+          renderGroups();
+          autoSaveToFile();
+          focusGroupInput(gIndex);
+        }
+      };
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-del-group';
+      delBtn.textContent = '✕';
+      delBtn.title = 'Eliminar este grupo';
+      delBtn.onclick = () => {
+        state.groups.splice(gIndex, 1);
+        renderGroups();
+        autoSaveToFile();
+      };
+
+      header.appendChild(buildGroupColorButton(group));
+      header.appendChild(input);
+      header.appendChild(delBtn);
+      card.appendChild(header);
+      if (openPaletteGroupId === group.id) card.appendChild(buildGroupPalette(group, gIndex));
+
+      buildGroupLabel(group, card);
+
+      const tagsDiv = document.createElement('div');
+      tagsDiv.className = 'tags-container';
+      group.tags.forEach((tag, tIndex) => {
+        const span = document.createElement('span');
+        span.className = 'tag';
+        span.textContent = tag.text;
+        span.style.backgroundColor = tag.bg;
+        span.style.borderColor = tag.border;
+        span.onclick = () => {
+          group.tags.splice(tIndex, 1);
+          renderGroups();
+          autoSaveToFile();
+        };
+        tagsDiv.appendChild(span);
+      });
+
+      card.appendChild(tagsDiv);
+      canvas.appendChild(card);
+    });
+  }
+
+  function addGroup() {
+    state.groups.push({ id: Date.now(), label: { text: '', custom: false, style: null }, color: null, tags: [] });
+    renderGroups();
+    autoSaveToFile();
+  }
+
+  // ─── Archivo y almacenamiento ───────────────────────────────────────────
+  async function linkSaveFile() {
+    try {
+      fileHandle = await window.showSaveFilePicker({
+        suggestedName: 'etiquetas-canva.json',
+        types: [{
+          description: 'Archivo de datos JSON',
+          accept: { 'application/json': ['.json'] }
+        }]
+      });
+      await autoSaveToFile();
+      const btn = document.getElementById('btnSaveFile');
+      btn.classList.add('linked');
+      btn.textContent = '✅ Guardando en local';
+    } catch (err) {
+      console.log('Operación cancelada o navegador no compatible:', err);
+    }
+  }
+
+  // Copia en el navegador: así no se pierde nada al recargar aunque no haya archivo vinculado
+  const STORAGE_KEY = 'tag-generator-state';
+
+  function saveLocal() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (err) {
+      console.warn('No se pudo guardar en localStorage:', err);
+    }
+  }
+
+  function restoreLocal() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (saved && Array.isArray(saved.groups)) return saved;
+    } catch (err) {
+      console.warn('No se pudo leer localStorage:', err);
+    }
+    return null;
+  }
+
+  // Completa los datos guardados con versiones anteriores del generador
+  function normalizeState(data) {
+    data.palette = Array.isArray(data.palette) && data.palette.length ? data.palette : [...defaultPalette];
+    data.groups = Array.isArray(data.groups) ? data.groups : [];
+    data.groups.forEach((g, i) => {
+      if (!Array.isArray(g.tags)) g.tags = [];
+      if (g.id === undefined || data.groups.some((o, j) => j < i && o.id === g.id)) g.id = Date.now() + i;
+      const c = g.color;
+      g.color = c && typeof c.bg === 'string' && typeof c.border === 'string' ? { bg: c.bg, border: c.border } : null;
+      g.label = normalizeGroupLabel(g.label);
+    });
+    data.labelStyle = normalizeStyle(data.labelStyle);
+    data.exportOptions = { ...DEFAULT_EXPORT_OPTIONS, ...data.exportOptions };
+    delete data.exportOptions.useExternalFont;  // opción de versiones anteriores
+    if (!FONTS[data.exportOptions.font]) data.exportOptions.font = DEFAULT_EXPORT_OPTIONS.font;
+    return data;
+  }
+
+  async function autoSaveToFile() {
+    saveLocal();
+    if (!fileHandle) return;
+    try {
+      // Un archivo abierto con "Cargar archivo" llega solo con permiso de lectura.
+      // autoSaveToFile se llama desde los handlers (Enter, clic), así que este
+      // requestPermission va dentro del gesto del usuario, como exige Chrome.
+      if (await fileHandle.queryPermission({ mode: 'readwrite' }) !== 'granted' &&
+          await fileHandle.requestPermission({ mode: 'readwrite' }) !== 'granted') {
+        setStatus(`⚠️ Sin permiso para escribir en "${fileHandle.name}": los cambios se guardan solo en el navegador.`);
+        return;
+      }
+      const writable = await fileHandle.createWritable();
+      await writable.write(JSON.stringify(state, null, 2));
+      await writable.close();
+      const now = new Date().toLocaleTimeString();
+      setStatus(`✅ Guardado automático en "${fileHandle.name}" a las ${now}`);
+    } catch (err) {
+      setStatus('⚠️ Error al guardar en el archivo local.');
+    }
+  }
+
+  async function loadFromFile() {
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        types: [{
+          description: 'Archivo de datos JSON',
+          accept: { 'application/json': ['.json'] }
+        }]
+      });
+      const file = await handle.getFile();
+      const contents = await file.text();
+      state = normalizeState(JSON.parse(contents));
+      activeColor = state.palette[0];
+      // El permiso de escritura se pide en el primer guardado (ver autoSaveToFile):
+      // pedirlo aquí, tras el selector, falla porque Chrome exige un gesto del usuario
+      fileHandle = handle;
+      saveLocal();
+      renderPalette();
+      renderGlobalStyleEditor();
+      renderGroups();
+      renderExportOptions();
+      const btn = document.getElementById('btnSaveFile');
+      btn.classList.add('linked');
+      btn.textContent = '✅ Guardando en local';
+      setStatus(`📂 Cargado y vinculado a "${handle.name}"`);
+    } catch (err) {
+      if (err.name === 'AbortError') return;  // el usuario cerró el selector
+      console.error('Error al cargar archivo:', err);
+      setStatus(`⚠️ No se pudo cargar el archivo: ${err.message}`);
+    }
+  }
+
+  function toggleCapture() {
+    document.body.classList.toggle('capture-mode');
+  }
+
+  function setStatus(text) {
+    document.getElementById('fileStatus').textContent = text;
+  }
+
+  // ─── Exportación a SVG para Canva ───────────────────────────────────────
+  // Canva sube el SVG como un único gráfico. No respeta las fuentes de un <text>
+  // y los trazos (stroke) le impiden recolorear, así que todo son rellenos con
+  // colores hex en atributos: los textos van en trazos (path) y cada borde es un
+  // rect del color del borde con otro del color de fondo encima.
+
+  const DEFAULT_EXPORT_OPTIONS = { font: 'inter' };
+
+  const SVG_LAYOUT = {
+    width: 1100,      // ancho máximo del área de etiquetas
+    columns: 2,
+    colGap: 50,
+    rowGap: 40,
+    labelGap: 10,     // entre la label y las etiquetas del grupo
+    tagGap: 8,
+    tagHeight: 29,    // 13.5 × 1.2 de línea + 5 × 2 de padding + 1.5 × 2 de borde
+    padX: 12,
+    border: 1.5,
+    radius: 6,
+    fontSize: 13.5,
+    textColor: '#1A202C'
+  };
+
+  function renderExportOptions() {
+    const select = document.getElementById('fontSelect');
+    if (!select.options.length) {
+      Object.entries(FONTS).forEach(([id, f]) => {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = f.name;
+        select.appendChild(opt);
+      });
+    }
+    select.value = state.exportOptions.font;
+  }
+
+  function updateExportOption(key, value) {
+    state.exportOptions[key] = value;
+    autoSaveToFile();
+  }
+
+  function labelVariant(label) {
+    return [label.font, label.weight, label.italic ? 'italic' : 'normal'];
+  }
+
+  // Coloca labels y etiquetas imitando el CSS de .canvas-area, .group-label y .tags-container
+  function buildLayout(tagFont, labelFonts) {
+    const L = SVG_LAYOUT;
+    const colWidth = (L.width - L.colGap * (L.columns - 1)) / L.columns;
+    const groups = state.groups.filter(g => g.tags.length > 0 || hasLabel(g));
+    const labels = [];
+    const tags = [];
+    let y = 0;
+    let maxRight = 0;
+
+    for (let i = 0; i < groups.length; i += L.columns) {
+      let rowHeight = 0;
+      groups.slice(i, i + L.columns).forEach((group, col) => {
+        const left = col * (colWidth + L.colGap);
+        let top = y;
+
+        if (hasLabel(group)) {
+          const label = effectiveLabel(group);
+          const font = labelFonts[labelVariant(label).join('-')];
+          const scale = label.size / font.unitsPerEm;
+          const text = labelText(label);
+          const w = font.getAdvanceWidth(text, label.size);
+          const free = Math.max(0, colWidth - w);
+          const x = left + (label.align === 'center' ? free / 2 : label.align === 'right' ? free : 0);
+          labels.push({ label, font, text, x, w, baseline: top + font.ascender * scale });
+          maxRight = Math.max(maxRight, x + w);
+          top += (font.ascender - font.descender) * scale;
+          if (group.tags.length) top += L.labelGap;
+        }
+
+        let x = left;
+        let lineY = top;
+        group.tags.forEach(tag => {
+          const textWidth = tagFont.getAdvanceWidth(tag.text, L.fontSize);
+          const w = Math.min(textWidth + L.padX * 2 + L.border * 2, colWidth);
+          if (x > left && x + w > left + colWidth) {
+            x = left;
+            lineY += L.tagHeight + L.tagGap;
+          }
+          tags.push({ ...tag, x, y: lineY, w, h: L.tagHeight, textWidth });
+          maxRight = Math.max(maxRight, x + w);
+          x += w + L.tagGap;
+        });
+
+        const bottom = group.tags.length ? lineY + L.tagHeight : top;
+        rowHeight = Math.max(rowHeight, bottom - y);
+      });
+      y += rowHeight + L.rowGap;
+    }
+
+    const height = groups.length ? y - L.rowGap : 0;
+    return { labels, tags, width: Math.ceil(maxRight), height: Math.ceil(height) };
+  }
+
+  function r(n) {
+    return Math.round(n * 100) / 100;
+  }
+
+  function buildSVG(tagFont, labelFonts) {
+    const L = SVG_LAYOUT;
+    const layout = buildLayout(tagFont, labelFonts);
+    const tagScale = L.fontSize / tagFont.unitsPerEm;
+    const innerRadius = L.radius - L.border;
+
+    const labelParts = layout.labels.map(({ label, font, text, x, w, baseline }) => {
+      const scale = label.size / font.unitsPerEm;
+      const d = font.getPath(text, x, baseline, label.size).toPathData(2);
+      let out = `    <path d="${d}" fill="${label.color}"/>`;
+      if (label.underline) {
+        const post = font.tables.post || {};
+        const position = (post.underlinePosition || -0.1 * font.unitsPerEm) * scale;
+        const thickness = Math.max(1, (post.underlineThickness || 0.05 * font.unitsPerEm) * scale);
+        out += `\n    <rect x="${r(x)}" y="${r(baseline - position)}" width="${r(w)}" height="${r(thickness)}" fill="${label.color}"/>`;
+      }
+      return `  <g>\n${out}\n  </g>`;
+    });
+
+    const tagParts = layout.tags.map(tag => {
+      const outer = `<rect x="${r(tag.x)}" y="${r(tag.y)}" width="${r(tag.w)}" height="${r(tag.h)}" rx="${L.radius}" ry="${L.radius}" fill="${tag.border}"/>`;
+      const inner = `<rect x="${r(tag.x + L.border)}" y="${r(tag.y + L.border)}" width="${r(tag.w - L.border * 2)}" height="${r(tag.h - L.border * 2)}" rx="${innerRadius}" ry="${innerRadius}" fill="${tag.bg}"/>`;
+      const baseline = tag.y + tag.h / 2 + ((tagFont.ascender + tagFont.descender) / 2) * tagScale;
+      const x = tag.x + (tag.w - tag.textWidth) / 2;
+      const d = tagFont.getPath(tag.text, x, baseline, L.fontSize).toPathData(2);
+      const text = `<path d="${d}" fill="${L.textColor}"/>`;
+      return `  <g>\n    ${outer}\n    ${inner}\n    ${text}\n  </g>`;
+    });
+
+    const parts = [...labelParts, ...tagParts];
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${layout.width}" height="${layout.height}" viewBox="0 0 ${layout.width} ${layout.height}">\n${parts.join('\n')}\n</svg>\n`;
+  }
+
+  async function exportSVG() {
+    if (!state.groups.some(g => g.tags.length > 0 || hasLabel(g))) {
+      setStatus('⚠️ No hay etiquetas ni labels que exportar.');
+      return;
+    }
+
+    const tagFontId = state.exportOptions.font;
+    const tagFontName = FONTS[tagFontId].name;
+
+    // Todas las variantes de fuente necesarias: la de las etiquetas y la de cada label
+    const variants = { tag: [tagFontId, nearestWeight(tagFontId, TAG_WEIGHT), 'normal'] };
+    state.groups.filter(hasLabel).forEach(g => {
+      const v = labelVariant(effectiveLabel(g));
+      variants[v.join('-')] = v;
+    });
+
+    setStatus('⏳ Descargando las fuentes…');
+    const fonts = {};
+    try {
+      await Promise.all(Object.entries(variants).map(async ([key, v]) => {
+        fonts[key] = await loadFont(...v);
+      }));
+    } catch (err) {
+      console.error('Error al cargar las fuentes:', err);
+      setStatus(`⚠️ ${err.message}: revisa la conexión y vuelve a exportar.`);
+      return;
+    }
+
+    const svg = buildSVG(fonts.tag, fonts);
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'etiquetas-canva.svg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    setStatus(`✅ SVG exportado (etiquetas en ${tagFontName}, texto en trazos).`);
+  }
+
+  const restored = restoreLocal();
+  state = normalizeState(restored || state);
+  activeColor = state.palette[0];
+  if (restored) setStatus('💾 Restaurado del navegador (sin archivo vinculado)');
+
+  renderPalette();
+  renderGlobalStyleEditor();
+  renderGroups();
+  renderExportOptions();
+
+</script>
+</body>
+</html>
