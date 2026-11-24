@@ -100,12 +100,13 @@ La app debe funcionar **sin backend**, en Pages y en Electron. La API añade cue
 
 **Hecho cuando**
 
-- [x] `pnpm -r lint` funciona, aunque no haya nada que analizar. El output esperado, ya que no hay paquetes, es:
-<code>
+- [x] `pnpm -r lint` funciona, aunque no haya nada que analizar. El output esperado en este punto, ya que no hay paquetes, es:
 
-No projects matched the filters in "C:\Users\gonza\repos\tag-generator"
-exit: 0
-</code>
+```bash
+    $ pnpm -r lint
+    No projects matched the filters in "C:\Users\gonza\repos\tag-generator"
+    exit: 0
+```
 
 - [x] Un commit con mensaje no convencional se rechaza.
 - [x] Hay `docs/adr/0001-*.md` y `0002-*.md`.
