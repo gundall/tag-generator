@@ -1,0 +1,35 @@
+# Dependencias
+node_modules/
+
+# Salidas de build
+dist/
+build/
+out/
+.next/
+release/
+
+# Tests y cobertura
+coverage/
+playwright-report/
+test-results/
+
+# TypeScript
+*.tsbuildinfo
+
+# Variables de entorno (las plantillas .env.example sí se versionan)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+.idea/
+
+# Configuración local de Claude Code
+.claude/settings.local.json
