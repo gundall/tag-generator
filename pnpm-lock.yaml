@@ -214,11 +214,12 @@ importers:
       typescript-eslint:
         specifier: ^8.73.0
         version: 8.73.0(eslint@10.15.0(jiti@2.7.0))(typescript@6.0.3)
+
+  packages/core:
+    devDependencies:
       vitest:
         specifier: ^5.1.1
         version: 5.1.1(vite@8.3.8(jiti@2.7.0))
-
-  packages/core: {}
 
 packages:
 
