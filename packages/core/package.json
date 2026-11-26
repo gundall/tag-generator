@@ -2,7 +2,8 @@
   "name": "@tag-generator/core",
   "type": "module",
   "scripts": {
-    "test": "vitest"
+    "test": "vitest",
+    "tscheck": "tsc --noEmit"
   },
   "private": true,
   "devDependencies": {
