@@ -1,6 +1,7 @@
 // API pública de @tag-generator/core: las apps solo importan desde aquí.
 
 // Modelo
+export type { Align } from "./model/align";
 export type { Color } from "./model/color";
 export type { ColorPair } from "./model/color-pair";
 export type { ExportOptions } from "./model/export-options";
