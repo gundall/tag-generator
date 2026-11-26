@@ -13,5 +13,6 @@ export type { Palette } from "./model/palette";
 export type { State } from "./model/state";
 export type { Tag } from "./model/tag";
 
-// Funciones
+// Funciones y valores por defecto
 export { nearestWeight } from "./nearest-weight";
+export { DEFAULT_STYLE, normalizeStyle } from "./normalize-style";
