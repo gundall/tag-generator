@@ -1,3 +1,4 @@
+import type { Align } from "./align";
 import type { Color } from "./color";
 import type { FontWeight } from "./font-weight";
 
@@ -9,5 +10,5 @@ export type LabelStyle = Readonly<{
   underline: boolean;
   size: number;
   color: Color;
-  align: "left" | "right" | "center";
+  align: Align;
 }>;
