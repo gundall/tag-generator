@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_STYLE, normalizeStyle } from "./normalize-style";
+import { normalizeStyle } from "./normalize-style";
+import { DEFAULT_STYLE } from "./model/label-style";
 
 describe("normalizeStyle", () => {
   it("Trae el objeto por defecto si mandamos algo que no sea object", () => {

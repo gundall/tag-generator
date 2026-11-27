@@ -2,19 +2,9 @@ import { isAlign } from "./model/align";
 import { isColor } from "./model/color";
 import type { FontCatalog } from "./model/font";
 import type { FontWeight } from "./model/font-weight";
-import type { LabelStyle } from "./model/label-style";
+import { DEFAULT_STYLE, type LabelStyle } from "./model/label-style";
 import { nearestWeight } from "./nearest-weight";
 
-export const DEFAULT_STYLE: LabelStyle = {
-  font: "inter",
-  weight: 700,
-  italic: false,
-  uppercase: false,
-  underline: false,
-  size: 18,
-  color: "#0F172A",
-  align: "left",
-};
 export const ALL_WEIGHTS: FontWeight[] = [
   100, 200, 300, 400, 500, 600, 700, 800, 900,
 ];
