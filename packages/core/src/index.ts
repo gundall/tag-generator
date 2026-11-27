@@ -19,3 +19,4 @@ export { DEFAULT_STYLE } from "./model/label-style";
 // Funciones y valores por defecto
 export { nearestWeight } from "./nearest-weight";
 export { normalizeStyle } from "./normalize-style";
+export { normalizeGroupLabel } from "./normalize-group-label";
